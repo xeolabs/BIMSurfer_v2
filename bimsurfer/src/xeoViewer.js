@@ -10,9 +10,11 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
         domNode.appendChild(canvas);
 
         // Create a Scene
-        this.scene = new XEO.Scene({ // http://xeoengine.org/docs/classes/Scene.html
+        var scene = new XEO.Scene({ // http://xeoengine.org/docs/classes/Scene.html
             canvas: canvas
         });
+
+        this.scene = scene;
 
         // The camera
         var camera = this.scene.camera;
@@ -23,7 +25,7 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
             persp: camera.project, // Camera has a XEO.Perspective by default
 
-            ortho: new XEO.Ortho(this.scene, {
+            ortho: new XEO.Ortho(scene, {
                 left: -1.0,
                 right: 1.0,
                 bottom: -1.0,
@@ -37,13 +39,31 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
         var projectionType = "persp";
 
         // Mouse and keyboard camera control
-        var cameraControl = new XEO.CameraControl(this.scene); // http://xeoengine.org/docs/classes/CameraControl.html
+        var cameraControl = new XEO.CameraControl(scene); // http://xeoengine.org/docs/classes/CameraControl.html
 
         // Flies cameras to objects
-        var cameraFlight = new XEO.CameraFlight(this.scene); // http://xeoengine.org/docs/classes/CameraFlight.html
+        var cameraFlight = new XEO.CameraFlight(scene); // http://xeoengine.org/docs/classes/CameraFlight.html
 
         // Registers loaded xeoEngine components for easy destruction
-        var collection = new XEO.Collection(this.scene); // http://xeoengine.org/docs/classes/Collection.html
+        var collection = new XEO.Collection(scene); // http://xeoengine.org/docs/classes/Collection.html
+
+        // Shows a wireframe box at the given boundary
+        var boundaryIndicator = scene.create(XEO.Entity, {
+            geometry: scene.create(XEO.BoundaryGeometry),
+            material: scene.create(XEO.PhongMaterial, {
+                diffuse: [0, 0, 0],
+                ambient: [0, 0, 0],
+                specular: [0, 0, 0],
+                emissive: [1.0, 1.0, 0.6],
+                lineWidth: 3
+            }),
+            visibility: scene.create(XEO.Visibility, {
+                visible: false
+            }),
+            modes: scene.create(XEO.Modes, {
+                collidable: false // Effectively has no boundary
+            })
+        });
 
         // Objects mapped to IDs
         var objects = {};
@@ -70,7 +90,7 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
             this.clear();
 
-            var geometry = new XEO.BoxGeometry(this.scene, { // http://xeoengine.org/docs/classes/Geometry.html
+            var geometry = new XEO.BoxGeometry(scene, { // http://xeoengine.org/docs/classes/Geometry.html
                 id: "geometry.myGeometry"
             });
 
@@ -103,7 +123,7 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
          */
         this.createGeometry = function (geometryId, positions, normals, colors, indices) {
 
-            var geometry = new XEO.Geometry(this.scene, { // http://xeoengine.org/docs/classes/Geometry.html
+            var geometry = new XEO.Geometry(scene, { // http://xeoengine.org/docs/classes/Geometry.html
                 id: "geometry." + geometryId,
                 primitive: "triangles",
                 positions: positions,
@@ -127,7 +147,7 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
          */
         this.createObject = function (roid, oid, objectId, geometryIds, type, matrix) {
 
-            var object = new XEO.BIMObject(this.scene, {
+            var object = new XEO.BIMObject(scene, {
                 id: objectId,
                 geometryIds: geometryIds,
                 matrix: matrix
@@ -456,35 +476,33 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
             params = params || {};
 
             var ids = params.ids;
+            var aabb;
 
             if (!ids || ids.length === 0) {
-
-                if (params.animate) {
-                    cameraFlight.flyTo(this.scene);
-
-                } else {
-                    cameraFlight.jumpTo(this.scene);
-                }
+                
+                // Fit everything in view by default
+                aabb = scene.worldBoundary.aabb;
 
             } else {
+                aabb = getObjectsAABB(ids);
+            }
 
-                var aabb = getObjectsAABB(ids);
+            if (params.animate) {
 
-                if (aabb) {
+                // Show the boundary we are flying to
+                boundaryIndicator.geometry.aabb = aabb; 
+                boundaryIndicator.visibility.visible = true;
 
-                    if (params.animate) {
+                cameraFlight.flyTo({ aabb: aabb },
+                    function () {
+                        
+                        // Hide the boundary again
+                        boundaryIndicator.visibility.visible = false;
+                    });
 
-                        cameraFlight.flyTo({
-                            aabb: aabb
-                        });
-
-                    } else {
-
-                        cameraFlight.jumpTo({
-                            aabb: aabb
-                        });
-                    }
-                }
+            } else {
+                
+                cameraFlight.jumpTo({ aabb: aabb });
             }
         };
 
@@ -648,4 +666,5 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
     return xeoViewer;
 
-});
+})
+;
