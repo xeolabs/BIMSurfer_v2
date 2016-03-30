@@ -41,6 +41,8 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
         // Mouse and keyboard camera control
         var cameraControl = new XEO.CameraControl(scene); // http://xeoengine.org/docs/classes/CameraControl.html
 
+        cameraControl.mousePickEntity.rayPick = true;
+
         // Flies cameras to objects
         var cameraFlight = new XEO.CameraFlight(scene); // http://xeoengine.org/docs/classes/CameraFlight.html
 
@@ -48,19 +50,23 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
         var collection = new XEO.Collection(scene); // http://xeoengine.org/docs/classes/Collection.html
 
         // Shows a wireframe box at the given boundary
-        var boundaryIndicator = scene.create(XEO.Entity, {
-            geometry: scene.create(XEO.BoundaryGeometry),
-            material: scene.create(XEO.PhongMaterial, {
+        var boundaryIndicator = new XEO.Entity(scene, {
+
+            geometry: new XEO.BoundaryGeometry(scene),
+
+            material: new XEO.PhongMaterial(scene, {
                 diffuse: [0, 0, 0],
                 ambient: [0, 0, 0],
                 specular: [0, 0, 0],
                 emissive: [1.0, 1.0, 0.6],
-                lineWidth: 3
+                lineWidth: 4
             }),
-            visibility: scene.create(XEO.Visibility, {
+
+            visibility: new XEO.Visibility(scene, {
                 visible: false
             }),
-            modes: scene.create(XEO.Modes, {
+
+            modes: new XEO.Modes(scene, {
                 collidable: false // Effectively has no boundary
             })
         });
@@ -90,7 +96,7 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
             this.clear();
 
-            var geometry = new XEO.BoxGeometry(scene, { // http://xeoengine.org/docs/classes/Geometry.html
+            var geometry = new XEO.SphereGeometry(scene, { // http://xeoengine.org/docs/classes/Geometry.html
                 id: "geometry.myGeometry"
             });
 
@@ -100,13 +106,17 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
             var oid;
             var type;
             var objectId;
+            var translate;
+            var scale;
             var matrix;
             var types = Object.keys(DefaultMaterials);
 
             for (var i = 0; i < 50; i++) {
                 objectId = "object" + i;
                 oid = objectId;
-                matrix = XEO.math.translationMat4c(Math.random() * 22 - 10, Math.random() * 20 - 10, Math.random() * 20 - 10);
+                translate = XEO.math.translationMat4c(Math.random() * 40 - 20, Math.random() * 40 - 20, Math.random() * 40 - 20);
+                scale = XEO.math.scalingMat4c(Math.random() * 5 + 0.2, Math.random() * 5 + 0.2, Math.random() * 5 + 0.2);
+                matrix = XEO.math.mulMat4(translate, scale);
                 type = types[Math.round(Math.random() * types.length)];
                 this.createObject(roid, oid, objectId, ["myGeometry"], type, matrix);
             }
@@ -479,7 +489,7 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
             var aabb;
 
             if (!ids || ids.length === 0) {
-                
+
                 // Fit everything in view by default
                 aabb = scene.worldBoundary.aabb;
 
@@ -490,19 +500,19 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
             if (params.animate) {
 
                 // Show the boundary we are flying to
-                boundaryIndicator.geometry.aabb = aabb; 
+                boundaryIndicator.geometry.aabb = aabb;
                 boundaryIndicator.visibility.visible = true;
 
-                cameraFlight.flyTo({ aabb: aabb },
+                cameraFlight.flyTo({aabb: aabb},
                     function () {
-                        
+
                         // Hide the boundary again
-                        boundaryIndicator.visibility.visible = false;
+                         boundaryIndicator.visibility.visible = false;
                     });
 
             } else {
-                
-                cameraFlight.jumpTo({ aabb: aabb });
+
+                cameraFlight.jumpTo({aabb: aabb});
             }
         };
 
@@ -655,11 +665,26 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
             if (params.cameraPosition) {
 
-                // TODO: How was the original camera position specified? Just do a viewFit for now.
+                // TODO: How was the original camera position specified?
 
-                console.warn("reset cameraPosition not yet supported");
+                console.warn("reset cameraPosition not implemented - doing a viewFit instead");
 
-                this.viewFit();
+                this.viewFit({animate: true});
+            }
+        };
+
+        /**
+         * Set general configurations
+         *
+         * @param params
+         * @param {Boolean} [params.mouseRayPick] When true, camera flies to picked point, otherwise to boundary of picked object
+         */
+        this.setConfigs = function (params) {
+
+            params = params || {};
+
+            if (params.mouseRayPick != undefined) {
+                cameraControl.mousePickEntity.rayPick = params.mouseRayPick;
             }
         };
     }

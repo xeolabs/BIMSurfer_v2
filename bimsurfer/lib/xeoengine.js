@@ -4,7 +4,7 @@
  * A WebGL-based 3D visualization engine from xeoLabs
  * http://xeoengine.org/
  *
- * Built on 2016-03-30
+ * Built on 2016-03-31
  *
  * MIT License
  * Copyright 2016, Lindsay Kay
@@ -1790,9 +1790,10 @@
 
                 pix = pickBuf.read(canvasX, canvasY);
                 var primitiveIndex = pix[0] + pix[1] * 256 + pix[2] * 65536;
-                primitiveIndex = (primitiveIndex >= 1) ? primitiveIndex - 1 : -1;
 
-                hit.primitiveIndex = primitiveIndex;
+                if  (primitiveIndex >= 1) {
+                    hit.primitiveIndex = primitiveIndex - 1;
+                }
             }
         }
 
@@ -11952,7 +11953,7 @@ XEO.math.b3 = function (t, p0, p1, p2, p3) {
 
                     hit.entity = entity; // Swap string ID for XEO.Entity
 
-                    if (hit.primitiveIndex !== -1) {
+                    if (hit.primitiveIndex !== undefined) {
 
                         var geometry = entity.geometry;
 
@@ -16656,57 +16657,50 @@ XEO.math.b3 = function (t, p0, p1, p2, p3) {
 
         _entityPicked: function (e) {
 
-            // Fly camera to each picked entity
-            // Don't change distance between look and eye
-
-            //  var view = this.cameraFlight.camera.view;
-
             var pos;
 
             if (e.worldPos) {
                 pos = e.worldPos
-
-            } else if (e.entity) {
-                pos = e.entity.worldBoundary.center
             }
+
+            var aabb;
+
+            aabb = e.entity.worldBoundary.aabb;
+
+            this._boundaryEntity.geometry.aabb = aabb;
+            this._boundaryEntity.visibility.visible = true;
 
             if (pos) {
 
-                //var diff = XEO.math.subVec3(view.eye, view.look, []);
-                //
-                //var input = this.scene.input;
+                // Fly to look at point, don't change eye->look dist
 
-                //  if (input.keyDown[input.KEY_SHIFT] && e.entity) {
-
-                // var aabb = e.entity.worldBoundary.aabb;
-
-                this._boundaryEntity.geometry.obb = e.entity.worldBoundary.obb;
-                this._boundaryEntity.visibility.visible = true;
-
-                var center = e.entity.worldBoundary.center;
+                var view = this.camera.view;
+                var diff = XEO.math.subVec3(view.eye, view.look, []);
 
                 this.cameraFlight.flyTo({
-                        aabb: e.entity.worldBoundary.aabb,
-                        oXffset: [
-                            pos[0] - center[0],
-                            pos[1] - center[1],
-                            pos[2] - center[2]
+                        look: pos,
+                        eye: [
+                            pos[0] + diff[0],
+                            pos[1] + diff[1],
+                            pos[2] + diff[2]
                         ]
                     },
                     this._hideEntityBoundary, this);
 
-                //} else {
-                //
-                //    this.cameraFlight.flyTo({
-                //            look: pos,
-                //            eye: [
-                //                pos[0] + diff[0],
-                //                pos[1] + diff[1],
-                //                pos[2] + diff[2]
-                //            ]
-                //        },
-                //        this._hideEntityBoundary, this);
-                //}
+                // TODO: Option to back off to fit AABB in view
+
+            } else {
+
+                // Fly to fit target boundary in view
+
+                // var aabb = e.entity.worldBoundary.aabb;
+
+                var center = e.entity.worldBoundary.center;
+
+                this.cameraFlight.flyTo({
+                        aabb: aabb
+                    },
+                    this._hideEntityBoundary, this);
             }
         },
 
@@ -18924,8 +18918,7 @@ XEO.math.b3 = function (t, p0, p1, p2, p3) {
                      * @param value The property's new value
                      */
                     this.fire('active', this._active = value);
-                }
-                ,
+                },
 
                 get: function () {
                     return this._active;
@@ -30135,7 +30128,13 @@ XEO.GLTFLoaderUtils = Object.create(Object, {
 
                 set: function (value) {
 
-                    this._state.opacity = (value !== undefined && value !== null) ? value : 1.0;
+                    value = (value !== undefined && value !== null) ? value : 1.0;
+
+                    if (this._state.opacity === value) {
+                        return;
+                    }
+
+                    this._state.opacity = value;
 
                     this._renderer.imageDirty = true;
 
@@ -35027,7 +35026,11 @@ XEO.GLTFLoaderUtils = Object.create(Object, {
 
                 set: function (value) {
 
-                    this._state.pickable = value !== false;
+                    value = value !== false;
+
+                    if (this._state.pickable === value) {
+                        return;
+                    }
 
                     this._renderer.drawListDirty = true;
 
@@ -35061,7 +35064,13 @@ XEO.GLTFLoaderUtils = Object.create(Object, {
 
                 set: function (value) {
 
-                    this._state.clippable = value !== false;
+                    value = value !== false;
+
+                    if (this._state.clippable === value) {
+                        return;
+                    }
+
+                    this._state.clippable = value;
 
                     this._renderer.imageDirty = true;
 
@@ -35097,7 +35106,13 @@ XEO.GLTFLoaderUtils = Object.create(Object, {
 
                 set: function (value) {
 
-                    this._state.transparent = !!value;
+                    value = !!value;
+
+                    if (this._state.transparent === value) {
+                        return;
+                    }
+
+                    this._state.transparent = value;
 
                     this._renderer.stateOrderDirty = true;
 
@@ -35132,6 +35147,10 @@ XEO.GLTFLoaderUtils = Object.create(Object, {
                 set: function (value) {
 
                     value = !!value;
+
+                    if (this._state.backfaces === value) {
+                        return;
+                    }
 
                     this._state.backfaces = value;
 
