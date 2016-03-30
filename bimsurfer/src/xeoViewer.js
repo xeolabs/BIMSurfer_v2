@@ -210,7 +210,7 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
                 } else {
 
-                    object = this.objects[id];
+                    object = objects[id];
 
                     if (!object) {
                         console.error("RFC type or object not found: '" + id + "'");
@@ -249,6 +249,8 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
             var objectId;
             var object;
+            var material;
+            var opacity;
 
             for (var i = 0, len = ids.length; i < len; i++) {
 
@@ -259,7 +261,17 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
                     console.error("Object not found: '" + objectId + "'");
 
                 } else {
-                    object.material.diffuse = color;
+
+                    material = object.material;
+
+                    material.diffuse = [color[0], color[1], color[2]];
+
+                    opacity = (color.length > 3) ? color[3] : 1;
+
+                    if (opacity !== material.opacity) {
+                        material.opacity = opacity;
+                        object.modes.transparent = opacity < 1;
+                    }
                 }
             }
         };
@@ -382,7 +394,7 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
             } else {
 
-               var aabb = getObjectsAABB(ids);
+                var aabb = getObjectsAABB(ids);
 
                 if (params.animate) {
 

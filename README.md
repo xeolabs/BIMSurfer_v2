@@ -1,3 +1,22 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Introduction](#introduction)
+- [Usage](#usage)
+  - [BIMSurfer](#bimsurfer)
+  - [Objects](#objects)
+    - [Selecting and deselecting objects](#selecting-and-deselecting-objects)
+    - [Showing and hiding objects](#showing-and-hiding-objects)
+    - [Changing the color and transparency of objects](#changing-the-color-and-transparency-of-objects)
+    - [Clearing objects](#clearing-objects)
+  - [Camera](#camera)
+    - [Controlling the camera](#controlling-the-camera)
+    - [Flying the camera to objects](#flying-the-camera-to-objects)
+    - [Camera interaction](#camera-interaction)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Introduction
 
 BIMSurfer is a WebGL-based 3D viewer for [BIMServer]() that's built on [xeoEngine](http://xeoengine.org).
@@ -41,15 +60,38 @@ TODO:
 
 ### Showing and hiding objects
 
-TODO
+Hiding three objects by ID:
 
-### Changing the color of objects
+````javascript
+bimSurfer.setVisibility({ids: ["object3", "object1", "object6"], visible: false });
+````
 
-TODO
+Setting two objects visible by ID:
 
-### Changing the transparency of an object
+````javascript
+bimSurfer.setVisibility({ids: ["object1", "object6"], visible: true });
+````
 
-TODO
+Hiding all objects of IFC types "IfcSlab" and "IfcWall":
+
+````javascript
+bimSurfer.setVisibility({ids: ["IfcSlab", "IfcWall"], visible: false });
+````
+
+### Changing the color and transparency of objects
+
+Making two objects pink:
+
+````javascript
+bimSurfer.setColor({ids: ["object3", "object6"], color: [1, 0, 1] })
+````
+
+An optional fourth element may be specified in the color to set opacity: 
+
+````javascript
+bimSurfer.setColor({ids: ["object3", "object6"], color: [1, 0, 1, 0.5] })
+````
+
 
 ### Clearing objects
  
@@ -125,22 +167,20 @@ The returned value would be:
 
 Flying the camera to fit specified objects in view:
 
-````json
+````javascript
 bimSurfer.viewFit({ids: ["object3", "object1", "object6"], animate: true });
 ````
 
 Jumping the camera to fit specified objects in view:
 
-````json
+````javascript
 bimSurfer.viewFit({ids: ["object1", "object6"], animate: false });
 ````
 
 Flying the camera to fit all objects in view:
 
-````json
+````javascript
 bimSurfer.viewFit({ animate: true });
 ````
-
-### Camera interaction
  
 
