@@ -7,11 +7,9 @@
     - [Selecting and deselecting objects](#selecting-and-deselecting-objects)
     - [Showing and hiding objects](#showing-and-hiding-objects)
     - [Changing the color and transparency of objects](#changing-the-color-and-transparency-of-objects)
-    - [Clearing objects](#clearing-objects)
   - [Camera](#camera)
     - [Controlling the camera](#controlling-the-camera)
-    - [Flying the camera to objects](#flying-the-camera-to-objects)
-    - [Camera interaction](#camera-interaction)
+    - [Fitting objects in view](#fitting-objects-in-view)
 
 # Introduction
 
@@ -185,7 +183,7 @@ The returned value would be:
 }
 ````
  
-### Flying the camera to objects
+### Fitting objects in view
 
 Flying the camera to fit specified objects in view:
 
