@@ -137,12 +137,14 @@ define(["bimserverapi_BimServerApi", "bimsurfer/src/Notifier.js", "bimsurfer/src
          * @param params
          */
         this.setSelectionState = function (params) {
+            return this._viewer.setSelectionState(params);
         };
 
         /**
          * Gets a list of selected elements.
          */
         this.getSelected = function () {
+            return this._viewer.getSelected();
         };
 
         /**

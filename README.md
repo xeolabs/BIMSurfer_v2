@@ -56,7 +56,36 @@ bimSurfer.load({
 
 ### Selecting and deselecting objects
 
-TODO:  
+Selecting four objects:
+
+````javascript
+bimSurfer.setSelectionState({ids: ["object3", "object2", "object4", "object6"], selected: true });
+````
+
+then querying which objects are selected:
+
+````javascript
+bimSurfer.getSelected()
+````
+
+The result shows that those four objects are currently selected:
+
+````json
+["object3", "object2", "object4", "object6"]
+````
+
+If we then deselect two objects, then query the selection again:
+
+````javascript
+bimSurfer.setSelectionState({ids: ["object3", "object6"], selected: false });
+bimSurfer.getSelected()
+````
+
+The result shows that only two objects are now selected:
+
+````json
+["object2", "object4"]  
+````
 
 ### Showing and hiding objects
 

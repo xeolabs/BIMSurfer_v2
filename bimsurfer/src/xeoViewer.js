@@ -51,6 +51,11 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
         // For each RFC type, a map of objects mapped to their IDs
         var rfcTypes = {};
 
+        // Objects that are currently selected, mapped to IDs
+        var selectedObjects = {};
+
+        // Lazy-generated array of selected object IDs, for return by #getSelected()
+        var selectedObjectList = null;
 
         /**
          * Loads random objects into the viewer for testing.
@@ -161,6 +166,8 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
             objects = {};
             rfcTypes = {};
+            selectedObjects = {};
+            selectedObjectList = null;
         };
 
         /**
@@ -220,6 +227,62 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
                     }
                 }
             }
+        };
+
+        /**
+         *
+         *
+         * @param params
+         * @param params.ids IDs of objects to update.
+         * @param params.selected Whether to select or not
+         */
+        this.setSelectionState = function (params) {
+
+            params = params || {};
+
+            var ids = params.ids;
+
+            if (!ids) {
+                console.error("Param expected: 'ids'");
+                return;
+            }
+
+            var selected = !!params.selected;
+
+            var objectId;
+            var object;
+
+            for (var i = 0, len = ids.length; i < len; i++) {
+
+                objectId = ids[i];
+                object = objects[objectId];
+
+                if (!object) {
+                    console.error("Object not found: '" + objectId + "'");
+
+                } else {
+                    if (selected) {
+                        selectedObjects[objectId] = object;
+                    } else {
+                        if (selectedObjects[objectId]) {
+                            delete selectedObjects[objectId];
+                        }
+                    }
+                    selectedObjectList = null; // Now needs lazy-rebuild
+                }
+            }
+        };
+
+        /**
+         * Returns array of IDs of objects that are currently selected
+         *
+         */
+        this.getSelected = function () {
+            if (selectedObjectList) {
+                return selectedObjectList;
+            }
+            selectedObjectList = Object.keys(selectedObjects);
+            return selectedObjectList;
         };
 
         /**
