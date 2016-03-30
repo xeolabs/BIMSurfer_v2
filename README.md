@@ -1,6 +1,4 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+#Table of Contents
 
 - [Introduction](#introduction)
 - [Usage](#usage)
@@ -15,11 +13,11 @@
     - [Flying the camera to objects](#flying-the-camera-to-objects)
     - [Camera interaction](#camera-interaction)
 
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # Introduction
 
 BIMSurfer is a WebGL-based 3D viewer for [BIMServer]() that's built on [xeoEngine](http://xeoengine.org).
+ 
+TODO: More info
      
 # Usage
 
@@ -121,11 +119,6 @@ An optional fourth element may be specified in the color to set opacity:
 bimSurfer.setColor({ids: ["object3", "object6"], color: [1, 0, 1, 0.5] })
 ````
 
-
-### Clearing objects
- 
-TODO
-
 ## Camera
   
 ### Controlling the camera
@@ -207,6 +200,12 @@ bimSurfer.viewFit({ids: ["object1", "object6"], animate: false });
 ````
 
 Flying the camera to fit all objects in view:
+
+````javascript
+bimSurfer.viewFit({ animate: true });
+````
+
+Omit the ````ids```` parameter to fit all objects in view:
 
 ````javascript
 bimSurfer.viewFit({ animate: true });
