@@ -1,4 +1,4 @@
-define(["bimsurfer/src/xeoBIMObject.js"], function () {
+define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], function (DefaultMaterials) {
 
     function xeoViewer(cfg) {
 
@@ -51,6 +51,7 @@ define(["bimsurfer/src/xeoBIMObject.js"], function () {
         // For each RFC type, a map of objects mapped to their IDs
         var rfcTypes = {};
 
+
         /**
          * Loads random objects into the viewer for testing.
          */
@@ -58,22 +59,25 @@ define(["bimsurfer/src/xeoBIMObject.js"], function () {
 
             this.clear();
 
-            var geometry = new XEO.TorusGeometry(this.scene, { // http://xeoengine.org/docs/classes/Geometry.html
+            var geometry = new XEO.BoxGeometry(this.scene, { // http://xeoengine.org/docs/classes/Geometry.html
                 id: "geometry.myGeometry"
             });
 
             collection.add(geometry);
 
             var roid = "foo";
-            var oid = "bar";
-            var type = "baz";
+            var oid;
+            var type;
             var objectId;
             var matrix;
+            var types = Object.keys(DefaultMaterials);
 
-            for (var i = 0; i < 20; i++) {
+            for (var i = 0; i < 50; i++) {
                 objectId = "object" + i;
+                oid = objectId;
                 matrix = XEO.math.translationMat4c(Math.random() * 22 - 10, Math.random() * 20 - 10, Math.random() * 20 - 10);
-                this.createObject(roid, oid, objectId, ["myGeometry"], "foo", matrix);
+                type = types[Math.round(Math.random() * types.length)];
+                this.createObject(roid, oid, objectId, ["myGeometry"], type, matrix);
             }
         };
 
@@ -127,6 +131,15 @@ define(["bimsurfer/src/xeoBIMObject.js"], function () {
             var types = (rfcTypes[type] || (rfcTypes[type] = {}));
             types[objectId] = object;
 
+            var color = DefaultMaterials[type] || DefaultMaterials["DEFAULT"];
+
+            object.material.diffuse = [color[0], color[1], color[2]];
+
+            if (color[3] < 1) { // Transparent object
+                object.material.opacity = color[4];
+                object.modes.transparent = true;
+            }
+
             return object;
         };
 
@@ -160,6 +173,8 @@ define(["bimsurfer/src/xeoBIMObject.js"], function () {
          * @param params.color Color to set.
          */
         this.setVisibility = function (params) {
+
+            params = params || {};
 
             var ids = params.ids;
 
@@ -216,6 +231,8 @@ define(["bimsurfer/src/xeoBIMObject.js"], function () {
          */
         this.setColor = function (params) {
 
+            params = params || {};
+
             var ids = params.ids;
 
             if (!ids) {
@@ -254,6 +271,8 @@ define(["bimsurfer/src/xeoBIMObject.js"], function () {
          */
         this.setCamera = function (params) {
 
+            params = params || {};
+
             // Set projection type
 
             var type = params.type;
@@ -273,15 +292,15 @@ define(["bimsurfer/src/xeoBIMObject.js"], function () {
             // Set camera position
 
             if (params.eye) {
-                camera.eye = params.eye;
+                camera.view.eye = params.eye;
             }
 
             if (params.target) {
-                camera.look = params.target;
+                camera.view.look = params.target;
             }
 
             if (params.up) {
-                camera.up = params.up;
+                camera.view.up = params.up;
             }
 
             // Set camera FOV angle, only if currently perspective
@@ -306,11 +325,10 @@ define(["bimsurfer/src/xeoBIMObject.js"], function () {
                     var project = camera.project;
                     var scale = params.scale;
 
-                    project.xmin = -scale[0];
-                    project.ymin = -scale[1];
-
-                    project.xmax = scale[0];
-                    project.ymin = scale[1];
+                    project.left = -scale[0];
+                    project.bottom = -scale[1];
+                    project.right = scale[0];
+                    project.top = scale[1];
                 }
             }
         };
@@ -324,13 +342,136 @@ define(["bimsurfer/src/xeoBIMObject.js"], function () {
 
             var view = camera.view;
 
-            return {
+            var json = {
                 type: projectionType,
-                eye: view.eye.splice(),
-                target: view.look.splice(),
-                up: view.up.splice()
+                eye: view.eye.splice(0),
+                target: view.look.splice(0),
+                up: view.up.splice(0)
             };
+
+            var project = camera.project;
+
+            if (projectionType === "persp") {
+                json.fovy = project.fovy;
+
+            } else if (projectionType === "ortho") {
+                json.size = [1, 1, 1]; // TODO: efficiently derive from cached value or otho volume
+            }
+
+            return json;
         };
+
+        /**
+         *
+         * @param params
+         */
+        this.viewFit = function (params) {
+
+            params = params || {};
+
+            var ids = params.ids;
+
+            if (!ids || ids.length === 0) {
+
+                if (params.animate) {
+                    cameraFlight.flyTo(this.scene);
+
+                } else {
+                    cameraFlight.jumpTo(this.scene);
+                }
+
+            } else {
+
+               var aabb = getObjectsAABB(ids);
+
+                if (params.animate) {
+
+                    cameraFlight.flyTo({
+                        aabb: aabb
+                    });
+
+                } else {
+
+                    cameraFlight.jumpTo({
+                        aabb: aabb
+                    });
+                }
+            }
+        };
+
+        // Returns an axis-aligned bounding box (AABB) that encloses the given objects
+        function getObjectsAABB(ids) {
+
+            var aabb = XEO.math.AABB3();
+
+            var xmin = 100000;
+            var ymin = 100000;
+            var zmin = 100000;
+            var xmax = -100000;
+            var ymax = -100000;
+            var zmax = -100000;
+
+            var objectId;
+            var object;
+            var i;
+            var len;
+            var worldBoundary;
+            var min;
+            var max;
+
+            for (i = 0, len = ids.length; i < len; i++) {
+
+                objectId = ids[i];
+                object = objects[objectId];
+
+                if (!object) {
+                    continue;
+                }
+
+                worldBoundary = object.worldBoundary;
+                if (!worldBoundary) {
+                    continue;
+                }
+
+                aabb = worldBoundary.aabb;
+
+                min = aabb.min;
+                max = aabb.max;
+
+                if (min[0] < xmin) {
+                    xmin = min[0];
+                }
+
+                if (min[1] < ymin) {
+                    ymin = min[1];
+                }
+
+                if (min[2] < zmin) {
+                    zmin = min[2];
+                }
+
+                if (max[0] > xmax) {
+                    xmax = max[0];
+                }
+
+                if (max[1] > ymax) {
+                    ymax = max[1];
+                }
+
+                if (max[2] > zmax) {
+                    zmax = max[2];
+                }
+            }
+
+            aabb.min[0] = xmin;
+            aabb.min[1] = ymin;
+            aabb.min[2] = zmin;
+            aabb.max[0] = xmax;
+            aabb.max[1] = ymax;
+            aabb.max[2] = zmax;
+
+            return aabb;
+        }
 
         this.reset = function (params) {
 

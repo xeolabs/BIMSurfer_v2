@@ -170,7 +170,7 @@ define(["bimserverapi_BimServerApi", "bimsurfer/src/Notifier.js", "bimsurfer/src
          *
          */
         this.getCamera = function () {
-            this._viewer.getCamera();
+            return this._viewer.getCamera();
         };
 
         /**

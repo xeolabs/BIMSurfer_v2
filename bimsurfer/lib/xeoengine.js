@@ -12621,6 +12621,7 @@ XEO.math.b3 = function (t, p0, p1, p2, p3) {
          * @param [params.eye] {Array of Number} Position to fly the eye position to.
          * @param [params.look] {Array of Number} Position to fly the look position to.
          * @param [params.up] {Array of Number} Position to fly the up vector to.
+         * @param [params.stopFOV] {Number} How much of field-of-view, in degrees, that a target AABB should fill the canvas.
          * @param [callback] {Function} Callback fired on arrival
          * @param [scope] {Object} Optional scope for callback
          */
@@ -12794,6 +12795,137 @@ XEO.math.b3 = function (t, p0, p1, p2, p3) {
 
             XEO.scheduleTask(this._update, this);
         },
+
+        /**
+         * Jumps this CameraFlight's {{#crossLink "Camera"}}{{/crossLink}} to the given target.
+         *
+         * <ul>
+         *     <li>When the target is a boundary, this CameraFlight will position the {{#crossLink "Camera"}}{{/crossLink}}
+         *     at where the target fills most of the canvas.</li>
+         *     <li>When the target is an explicit {{#crossLink "Camera"}}{{/crossLink}} position, given as ````eye````, ````look```` and ````up````
+         *      vectors, then this CameraFlight will jump the {{#crossLink "Camera"}}{{/crossLink}} to that target.</li>
+         * @method flyTo
+         * @param params  {*|Component} Either a parameters object or a {{#crossLink "Component"}}{{/crossLink}} subtype that has a {{#crossLink "WorldBoundary"}}{{/crossLink}}.
+         * @param[params.arc=0]  {Number} Factor in range [0..1] indicating how much the
+         * {{#crossLink "Camera/eye:property"}}Camera's eye{{/crossLink}} position will
+         * swing away from its {{#crossLink "Camera/eye:property"}}look{{/crossLink}} position as it flies to the target.
+         * @param [params.component] {String|Component} ID or instance of a component to fly to.
+         * @param [params.aabb] {*}  World-space axis-aligned bounding box (AABB) target to fly to.
+         * @param [params.eye] {Array of Number} Position to fly the eye position to.
+         * @param [params.look] {Array of Number} Position to fly the look position to.
+         * @param [params.up] {Array of Number} Position to fly the up vector to.
+         * @param [params.stopFOV] {Number} How much of field-of-view, in degrees, that a target AABB should fill the canvas.
+         */
+        jumpTo: function (params) {
+
+            if (this._flying) {
+                this.stop();
+            }
+
+            var camera = this._attached.camera;
+
+            if (!camera) {
+                return;
+            }
+
+            var lookat = camera.view;
+
+            var aabb;
+            var eye;
+            var look;
+            var up;
+            var componentId;
+
+            if (params.worldBoundary) {
+
+                // Argument is a Component subtype with a worldBoundary
+
+                aabb = params.worldBoundary.aabb;
+
+            } else if (params.aabb) {
+
+                aabb = params.aabb;
+
+                // Argument is a Boundary3D
+
+            } else if (params.min !== undefined && params.max !== undefined) {
+
+                // Argument is an AABB
+
+                aabb = params;
+
+            } else if (params.eye || params.look || params.up) {
+
+                // Argument is eye, look and up positions
+
+                eye = params.eye;
+                look = params.look;
+                up = params.up;
+
+            } else {
+
+                // Argument must be an instance or ID of a Component (subtype)
+
+                var component = params;
+
+                if (XEO._isNumeric(component) || XEO._isString(component)) {
+
+                    componentId = component;
+
+                    component = this.scene.components[componentId];
+
+                    if (!component) {
+                        this.error("Component not found: " + XEO._inQuotes(componentId));
+                        return;
+                    }
+                }
+
+                var worldBoundary = component.worldBoundary;
+
+                if (!worldBoundary) {
+                    this.error("Can't jump to component " + XEO._inQuotes(componentId) + " - does not have a worldBoundary");
+                    return;
+                }
+
+                aabb = worldBoundary.aabb;
+            }
+
+            var offset = params.offset;
+
+            if (aabb) {
+
+                if (aabb.max[0] <= aabb.min[0] || aabb.max[1] <= aabb.min[1] || aabb.max[2] <= aabb.min[2]) {
+
+                    // Don't fly to an empty boundary
+                    return;
+                }
+
+                eye = lookat.eye;
+                look = XEO.math.getAABBCenter(aabb);
+
+                var vec = XEO.math.normalizeVec3(XEO.math.subVec3(eye, look, tempVec3));
+                var diag = XEO.math.getAABBDiag(aabb);
+                var sca = Math.abs((diag) / Math.tan((params.stopFOV || this._stopFOV) / 2));
+
+                lookat.eye = [look[0] + (vec[0] * sca), look[1] + (vec[1] * sca), look[2] + (vec[2] * sca)];
+                lookat.look = look;
+
+            } else if (eye || look || up) {
+
+                if (eye) {
+                    lookat.eye = eye;
+                }
+
+                if (look) {
+                    lookat.look = look;
+                }
+
+                if (up) {
+                    lookat.up = up;
+                }
+            }
+        },
+
 
         _update: function () {
 
@@ -17111,7 +17243,7 @@ XEO.math.b3 = function (t, p0, p1, p2, p3) {
  @module XEO
  @submodule controls
  @constructor
- @param [viewer] {Viewer} Parent {{#crossLink "Viewer"}}{{/crossLink}}.
+ @param [scene] {Scene} Parent {{#crossLink "Scene"}}{{/crossLink}}.
  @param [cfg] {*} Configs
  @param [cfg.id] {String} Optional ID, unique among all components in the parent viewer, generated automatically when omitted.
  @param [cfg.meta] {String:Object} Optional map of user-defined metadata to attach to this KeyboardAxisCamera.

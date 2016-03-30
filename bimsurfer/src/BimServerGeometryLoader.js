@@ -1,4 +1,4 @@
-define(["bimsurfer/src/DataInputStreamReader.js", "bimsurfer/src/DefaultMaterials.js"], function (DataInputStreamReader, DefaultMaterials) {
+define(["bimsurfer/src/DataInputStreamReader.js"], function (DataInputStreamReader) {
 
     function BimServerGeometryLoader(bimServerApi, models, viewer) {
 
@@ -363,17 +363,7 @@ define(["bimsurfer/src/DataInputStreamReader.js", "bimsurfer/src/DefaultMaterial
                         return;
                     }
 
-                    var object = o.viewer.createObject(roid, oid, objectId, geometryIds, type, matrix);
-
-                    var color = DefaultMaterials[type] || DefaultMaterials["DEFAULT"];
-
-                    object.material.diffuse = color;
-
-                    if (color.a < 1) { // Transparent object
-
-                        object.material.opacity = 0.4;
-                        object.modes.transparent = true;
-                    }
+                    o.viewer.createObject(roid, oid, objectId, geometryIds, type, matrix);
 
                     o.objectAddedListeners.forEach(function (listener) {
 
