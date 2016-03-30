@@ -54,6 +54,12 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
         // Objects that are currently selected, mapped to IDs
         var selectedObjects = {};
 
+        // Original object colors for resetting to
+        var objectColorResets = {};
+
+        // Original object visibilities for resetting to
+        var objectVisibleResets = {};
+
         // Lazy-generated array of selected object IDs, for return by #getSelected()
         var selectedObjectList = null;
 
@@ -141,9 +147,12 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
             object.material.diffuse = [color[0], color[1], color[2]];
 
             if (color[3] < 1) { // Transparent object
-                object.material.opacity = color[4];
+                object.material.opacity = color[3];
                 object.modes.transparent = true;
             }
+
+            objectColorResets[objectId] = color;
+            objectVisibleResets[objectId] = object.visibility.visible;
 
             return object;
         };
@@ -168,6 +177,8 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
             rfcTypes = {};
             selectedObjects = {};
             selectedObjectList = null;
+            objectColorResets = {};
+            objectVisibleResets = {};
         };
 
         /**
@@ -312,8 +323,6 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
             var objectId;
             var object;
-            var material;
-            var opacity;
 
             for (var i = 0, len = ids.length; i < len; i++) {
 
@@ -322,20 +331,22 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
                 if (!object) {
                     console.error("Object not found: '" + objectId + "'");
-
-                } else {
-
-                    material = object.material;
-
-                    material.diffuse = [color[0], color[1], color[2]];
-
-                    opacity = (color.length > 3) ? color[3] : 1;
-
-                    if (opacity !== material.opacity) {
-                        material.opacity = opacity;
-                        object.modes.transparent = opacity < 1;
-                    }
+                    return;
                 }
+
+                this._setObjectColor(object, color);
+            }
+        };
+
+        this._setObjectColor = function (object, color) {
+
+            var material = object.material;
+            material.diffuse = [color[0], color[1], color[2]];
+
+            var opacity = (color.length > 3) ? color[3] : 1;
+            if (opacity !== material.opacity) {
+                material.opacity = opacity;
+                object.modes.transparent = opacity < 1;
             }
         };
 
@@ -459,17 +470,20 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
                 var aabb = getObjectsAABB(ids);
 
-                if (params.animate) {
+                if (aabb) {
 
-                    cameraFlight.flyTo({
-                        aabb: aabb
-                    });
+                    if (params.animate) {
 
-                } else {
+                        cameraFlight.flyTo({
+                            aabb: aabb
+                        });
 
-                    cameraFlight.jumpTo({
-                        aabb: aabb
-                    });
+                    } else {
+
+                        cameraFlight.jumpTo({
+                            aabb: aabb
+                        });
+                    }
                 }
             }
         };
@@ -477,7 +491,44 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
         // Returns an axis-aligned bounding box (AABB) that encloses the given objects
         function getObjectsAABB(ids) {
 
-            var aabb = XEO.math.AABB3();
+            if (ids.length === 0) {
+
+                // No object IDs given
+                return null;
+            }
+
+            var objectId;
+            var object;
+            var worldBoundary;
+
+            if (ids.length === 1) {
+
+                // One object ID given
+
+                objectId = ids[0];
+                object = objects[objectId];
+
+                if (object) {
+                    worldBoundary = object.worldBoundary;
+
+                    if (worldBoundary) {
+                        return worldBoundary.aabb;
+
+                    } else {
+                        return null;
+                    }
+
+                } else {
+                    return null;
+                }
+            }
+
+            // Many object IDs given
+
+            var i;
+            var len;
+            var min;
+            var max;
 
             var xmin = 100000;
             var ymin = 100000;
@@ -486,13 +537,7 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
             var ymax = -100000;
             var zmax = -100000;
 
-            var objectId;
-            var object;
-            var i;
-            var len;
-            var worldBoundary;
-            var min;
-            var max;
+            var aabb = XEO.math.AABB3();
 
             for (i = 0, len = ids.length; i < len; i++) {
 
@@ -550,6 +595,54 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
 
         this.reset = function (params) {
 
+            params = params || {};
+
+            if (params.visibility || params.elementColors) {
+
+                var i;
+                var len;
+                var objectId;
+                var ids = params.ids || Object.keys(objects);
+                var visibility = params.visibility;
+                var elementColors = params.elementColors;
+                var object;
+
+                for (i = 0, len = ids.length; i < len; i++) {
+
+                    objectId = ids[i];
+
+                    object = objects[objectId];
+
+                    if (!object) {
+                        continue;
+                    }
+
+                    if (visibility) {
+                        object.visibility.visible = objectVisibleResets[objectId];
+                    }
+
+                    if (elementColors) {
+                        this._setObjectColor(object, objectColorResets[objectId]);
+                    }
+                }
+            }
+
+            if (params.selectionState) {
+
+                selectedObjects = {};
+                selectedObjectList = null;
+
+                // TODO: Fire event
+            }
+
+            if (params.cameraPosition) {
+
+                // TODO: How was the original camera position specified? Just do a viewFit for now.
+
+                console.warn("reset cameraPosition not yet supported");
+
+                this.viewFit();
+            }
         };
     }
 

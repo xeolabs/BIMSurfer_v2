@@ -6,10 +6,13 @@
   - [Objects](#objects)
     - [Selecting and deselecting objects](#selecting-and-deselecting-objects)
     - [Showing and hiding objects](#showing-and-hiding-objects)
-    - [Changing the color and transparency of objects](#changing-the-color-and-transparency-of-objects)
+    - [Changing color and transparency of objects](#changing-color-and-transparency-of-objects)
   - [Camera](#camera)
     - [Controlling the camera](#controlling-the-camera)
     - [Fitting objects in view](#fitting-objects-in-view)
+  - [Resetting](#resetting)
+    - [Camera](#camera-1)
+    - [Objects](#objects-1)
 
 # Introduction
 
@@ -103,7 +106,7 @@ Hiding all objects of IFC types "IfcSlab" and "IfcWall":
 bimSurfer.setVisibility({ids: ["IfcSlab", "IfcWall"], visible: false });
 ````
 
-### Changing the color and transparency of objects
+### Changing color and transparency of objects
 
 Making two objects pink:
 
@@ -185,28 +188,71 @@ The returned value would be:
  
 ### Fitting objects in view
 
-Flying the camera to fit specified objects in view:
+Flying the camera to fit the specified objects in view:
 
 ````javascript
-bimSurfer.viewFit({ids: ["object3", "object1", "object6"], animate: true });
+bimSurfer.viewFit({ ids: ["object3", "object1", "object6"], animate: true });
 ````
 
-Jumping the camera to fit specified objects in view:
+Jumping the camera to fit the specified objects in view:
 
 ````javascript
 bimSurfer.viewFit({ids: ["object1", "object6"], animate: false });
 ````
 
-Flying the camera to fit all objects in view:
+Flying to fit all objects in view:
 
 ````javascript
 bimSurfer.viewFit({ animate: true });
 ````
 
-Omit the ````ids```` parameter to fit all objects in view:
+Jumping to fit all objects in view:
 
 ````javascript
-bimSurfer.viewFit({ animate: true });
+bimSurfer.viewFit({ animate: false });
 ````
+
+## Resetting
+
+### Camera
+
+Resetting the camera to initial position:  
+
+````javascript
+bimSurfer.reset({ cameraPosition: true });
+````
+
+### Objects
+
+Resetting all objects to initial visibilities:
+
+````javascript
+bimSurfer.reset({ visibility: true });
+````
+
+Resetting two objects to their initial visibilities:  
+
+````javascript
+bimSurfer.reset({ ids: ["object3", "object6"], visibility: true });
+````
+
+Resetting all objects to their initial colors:  
+
+````javascript
+bimSurfer.reset({ elementColors: true });
+````
+
+Resetting two objects to their initial colors:  
+
+````javascript
+bimSurfer.reset({ ids: ["object3", "object6"], elementColors: true });
+````
+
+Deselecting all objects:  
+
+````javascript
+bimSurfer.reset({ selectionState: true });
+````
+
  
 
