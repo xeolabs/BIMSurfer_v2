@@ -25,6 +25,9 @@ define(["bimserverapi_BimServerApi", "bimsurfer/src/Notifier.js", "bimsurfer/src
 
             } else if (params.api) {
                 return this._loadFromAPI(params);
+
+            } else if (params.gltf) {
+                this._loadFrom_glTF(params);
             }
         };
 
@@ -54,8 +57,9 @@ define(["bimserverapi_BimServerApi", "bimsurfer/src/Notifier.js", "bimsurfer/src
         };
 
         this._loadFrom_glTF = function (params) {
-            this.clear();
-            this._collection.add(new XEO.Model(this.scene, {src: params.src}));
+            if (params.src) {
+                this._viewer.loadglTF(params.src);
+            }
         };
 
         this._loadFromAPI = function (params) {

@@ -163,6 +163,20 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
                 matrix: matrix
             });
 
+            this._addObject(objectId, type, object);
+
+            return object;
+        };
+
+        /**
+         * Inserts an object into this viewer
+         *
+         * @param {XEO.Entity | XEO.BIMObject} object
+         * @returns The object.
+         * @private
+         */
+        this._addObject = function (objectId, type, object) {
+
             collection.add(object);
 
             // Register object against ID
@@ -185,6 +199,36 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
             objectVisibleResets[objectId] = object.visibility.visible;
 
             return object;
+        };
+
+        /**
+         * Loads glTF model.
+         *
+         * @param src
+         */
+        this.loadglTF = function (src) {
+
+            this.clear();
+
+            var model = new XEO.Model(scene, {
+                src: src
+            });
+
+            collection.add(model);
+
+            var self = this;
+
+            model.on("loaded",
+                function () {
+
+                   // TODO: viewFit, but boundaries not yet ready on Model Entities
+
+                    model.collection.iterate(function (component) {
+                        if (component.isType("XEO.Entity")) {
+                            self._addObject(component.id, "DEFAULT", component);
+                        }
+                    })
+                });
         };
 
         /**
@@ -507,7 +551,7 @@ define(["bimsurfer/src/DefaultMaterials.js", "bimsurfer/src/xeoBIMObject.js"], f
                     function () {
 
                         // Hide the boundary again
-                         boundaryIndicator.visibility.visible = false;
+                        boundaryIndicator.visibility.visible = false;
                     });
 
             } else {
